@@ -1,37 +1,37 @@
 ---
-summary: "Spec for the Clawdis macOS companion menu bar app (gateway + node broker)"
+summary: "Spec for the Clawdbot macOS companion menu bar app (gateway + node broker)"
 read_when:
   - Implementing macOS app features
   - Changing gateway lifecycle or node bridging on macOS
 ---
-# Clawdis macOS Companion (menu bar + gateway broker)
+# Clawdbot macOS Companion (menu bar + gateway broker)
 
 Author: steipete · Status: draft spec · Date: 2025-12-20
 
 ## Purpose
-- Single macOS menu-bar app named **Clawdis** that:
-  - Shows native notifications for Clawdis/clawdis events.
+- Single macOS menu-bar app named **Clawdbot** that:
+  - Shows native notifications for Clawdbot/clawdbot events.
   - Owns TCC prompts (Notifications, Accessibility, Screen Recording, Automation/AppleScript, Microphone, Speech Recognition).
   - Runs (or connects to) the **Gateway** and exposes itself as a **node** so agents can reach macOS‑only features.
   - Hosts **PeekabooBridge** for UI automation (consumed by `peekaboo`; see `docs/mac/peekaboo.md`).
-  - Installs a single CLI (`clawdis`) by symlinking the bundled binary.
+  - Installs a single CLI (`clawdbot`) by symlinking the bundled binary.
 
 ## High-level design
 - SwiftPM package in `apps/macos/` (macOS 15+, Swift 6).
 - Targets:
-  - `ClawdisIPC` (shared Codable types + helpers for app‑internal actions).
-  - `Clawdis` (LSUIElement MenuBarExtra app; hosts Gateway + node bridge + PeekabooBridgeHost).
-- Bundle ID: `com.clawdis.mac`.
+  - `ClawdbotIPC` (shared Codable types + helpers for app‑internal actions).
+  - `Clawdbot` (LSUIElement MenuBarExtra app; hosts Gateway + node bridge + PeekabooBridgeHost).
+- Bundle ID: `com.clawdbot.mac`.
 - Bundled runtime binaries live under `Contents/Resources/Relay/`:
-  - `clawdis` (bun‑compiled relay: CLI + gateway-daemon)
-- The app symlinks `clawdis` into `/usr/local/bin` and `/opt/homebrew/bin`.
+  - `clawdbot` (bun‑compiled relay: CLI + gateway-daemon)
+- The app symlinks `clawdbot` into `/usr/local/bin` and `/opt/homebrew/bin`.
 
 ## Gateway + node bridge
 - The mac app runs the Gateway in **local** mode (unless configured remote).
-- The gateway port is configurable via `gateway.port` or `CLAWDIS_GATEWAY_PORT` (default 18789). The mac app reads that value for launchd, probes, and remote SSH tunnels.
+- The gateway port is configurable via `gateway.port` or `CLAWDBOT_GATEWAY_PORT` (default 18789). The mac app reads that value for launchd, probes, and remote SSH tunnels.
 - The mac app connects to the bridge as a **node** and advertises capabilities/commands.
 - Agent‑facing actions are exposed via `node.invoke` (no local control socket).
-- The mac app watches `~/.clawdis/clawdis.json` and switches modes live when `gateway.mode` or `gateway.remote.url` changes.
+- The mac app watches `~/.clawdbot/clawdbot.json` and switches modes live when `gateway.mode` or `gateway.remote.url` changes.
 - If `gateway.mode` is unset but `gateway.remote.url` is set, the mac app treats it as remote mode.
 - Changing connection mode in the mac app writes `gateway.mode` (and `gateway.remote.url` in remote mode) back to the config file.
 
@@ -45,12 +45,12 @@ Author: steipete · Status: draft spec · Date: 2025-12-20
 - Nodes include a `permissions` map in hello/pairing.
 - The Gateway surfaces it via `node.list` / `node.describe` so agents can decide what to run.
 
-## CLI (`clawdis`)
-- The **only** CLI is `clawdis` (TS/bun). There is no `clawdis-mac` helper.
+## CLI (`clawdbot`)
+- The **only** CLI is `clawdbot` (TS/bun). There is no `clawdbot-mac` helper.
 - For mac‑specific actions, the CLI uses `node.invoke`:
-  - `clawdis canvas present|navigate|eval|snapshot|a2ui push|a2ui reset`
-  - `clawdis nodes run --node <id> -- <command...>`
-  - `clawdis nodes notify --node <id> --title ...`
+  - `clawdbot canvas present|navigate|eval|snapshot|a2ui push|a2ui reset`
+  - `clawdbot nodes run --node <id> -- <command...>`
+  - `clawdbot nodes notify --node <id> --title ...`
 
 ## Onboarding
 - Install CLI (symlink) → Permissions checklist → Test notification → Done.
@@ -59,19 +59,19 @@ Author: steipete · Status: draft spec · Date: 2025-12-20
 
 ## Deep links (URL scheme)
 
-Clawdis (the macOS app) registers a URL scheme for triggering local actions from anywhere (browser, Shortcuts, CLI, etc.).
+Clawdbot (the macOS app) registers a URL scheme for triggering local actions from anywhere (browser, Shortcuts, CLI, etc.).
 
 Scheme:
-- `clawdis://…`
+- `clawdbot://…`
 
-### `clawdis://agent`
+### `clawdbot://agent`
 
 Triggers a Gateway `agent` request (same machinery as WebChat/agent runs).
 
 Example:
 
 ```bash
-open 'clawdis://agent?message=Hello%20from%20deep%20link'
+open 'clawdbot://agent?message=Hello%20from%20deep%20link'
 ```
 
 Query parameters:
@@ -86,16 +86,16 @@ Query parameters:
 Safety/guardrails:
 - Always enabled.
 - Without a `key` query param, the app will prompt for confirmation before invoking the agent.
-- With `key=<value>`, Clawdis runs without prompting (intended for personal automations).
+- With `key=<value>`, Clawdbot runs without prompting (intended for personal automations).
   - The current key is shown in Debug Settings and stored locally in UserDefaults.
 
 Notes:
-- In local mode, Clawdis will start the local Gateway if needed before issuing the request.
-- In remote mode, Clawdis will use the configured remote tunnel/endpoint.
+- In local mode, Clawdbot will start the local Gateway if needed before issuing the request.
+- In remote mode, Clawdbot will use the configured remote tunnel/endpoint.
 
 ## Build & dev workflow (native)
 - `cd native && swift build` (debug) / `swift build -c release`.
-- Run app for dev: `swift run Clawdis` (or Xcode scheme).
+- Run app for dev: `swift run Clawdbot` (or Xcode scheme).
 - Package app + CLI: `scripts/package-mac-app.sh` (builds bun CLI + gateway).
 - Tests: add Swift Testing suites under `apps/macos/Tests`.
 

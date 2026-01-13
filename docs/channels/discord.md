@@ -1,7 +1,7 @@
 ---
 summary: "Discord bot support status, capabilities, and configuration"
 read_when:
-  - Working on Discord provider features
+  - Working on Discord channel features
 ---
 # Discord (Bot API)
 
@@ -12,7 +12,7 @@ Status: ready for DM and guild text channels via the official Discord bot gatewa
 1) Create a Discord bot and copy the bot token.
 2) Set the token for Clawdbot:
    - Env: `DISCORD_BOT_TOKEN=...`
-   - Or config: `discord.token: "..."`.
+   - Or config: `channels.discord.token: "..."`.
 3) Invite the bot to your server with message permissions.
 4) Start the gateway.
 5) DM access is pairing by default; approve the pairing code on first contact.
@@ -20,9 +20,11 @@ Status: ready for DM and guild text channels via the official Discord bot gatewa
 Minimal config:
 ```json5
 {
-  discord: {
-    enabled: true,
-    token: "YOUR_BOT_TOKEN"
+  channels: {
+    discord: {
+      enabled: true,
+      token: "YOUR_BOT_TOKEN"
+    }
   }
 }
 ```
@@ -30,29 +32,29 @@ Minimal config:
 ## Goals
 - Talk to Clawdbot via Discord DMs or guild channels.
 - Direct chats collapse into the agent's main session (default `agent:main:main`); guild channels stay isolated as `agent:<agentId>:discord:channel:<channelId>` (display names use `discord:<guildSlug>#<channelSlug>`).
-- Group DMs are ignored by default; enable via `discord.dm.groupEnabled` and optionally restrict by `discord.dm.groupChannels`.
-- Keep routing deterministic: replies always go back to the provider they arrived on.
+- Group DMs are ignored by default; enable via `channels.discord.dm.groupEnabled` and optionally restrict by `channels.discord.dm.groupChannels`.
+- Keep routing deterministic: replies always go back to the channel they arrived on.
 
 ## How it works
 1. Create a Discord application → Bot, enable the intents you need (DMs + guild messages + message content), and grab the bot token.
 2. Invite the bot to your server with the permissions required to read/send messages where you want to use it.
-3. Configure Clawdbot with `DISCORD_BOT_TOKEN` (or `discord.token` in `~/.clawdbot/clawdbot.json`).
-4. Run the gateway; it auto-starts the Discord provider when a token is available (env or config) and `discord.enabled` is not `false`.
+3. Configure Clawdbot with `DISCORD_BOT_TOKEN` (or `channels.discord.token` in `~/.clawdbot/clawdbot.json`).
+4. Run the gateway; it auto-starts the Discord channel when a token is available (env or config) and `channels.discord.enabled` is not `false`.
    - If you prefer env vars, set `DISCORD_BOT_TOKEN` (a config block is optional).
 5. Direct chats: use `user:<id>` (or a `<@id>` mention) when delivering; all turns land in the shared `main` session. Bare numeric IDs are ambiguous and rejected.
 6. Guild channels: use `channel:<channelId>` for delivery. Mentions are required by default and can be set per guild or per channel.
-7. Direct chats: secure by default via `discord.dm.policy` (default: `"pairing"`). Unknown senders get a pairing code (expires after 1 hour); approve via `clawdbot pairing approve discord <code>`.
-   - To keep old “open to anyone” behavior: set `discord.dm.policy="open"` and `discord.dm.allowFrom=["*"]`.
-   - To hard-allowlist: set `discord.dm.policy="allowlist"` and list senders in `discord.dm.allowFrom`.
-   - To ignore all DMs: set `discord.dm.enabled=false` or `discord.dm.policy="disabled"`.
-8. Group DMs are ignored by default; enable via `discord.dm.groupEnabled` and optionally restrict by `discord.dm.groupChannels`.
-9. Optional guild rules: set `discord.guilds` keyed by guild id (preferred) or slug, with per-channel rules.
-10. Optional native commands: `commands.native` defaults to `"auto"` (on for Discord/Telegram, off for Slack). Override with `discord.commands.native: true|false|"auto"`; `false` clears previously registered commands. Text commands are controlled by `commands.text` and must be sent as standalone `/...` messages. Use `commands.useAccessGroups: false` to bypass access-group checks for commands.
+7. Direct chats: secure by default via `channels.discord.dm.policy` (default: `"pairing"`). Unknown senders get a pairing code (expires after 1 hour); approve via `clawdbot pairing approve discord <code>`.
+   - To keep old “open to anyone” behavior: set `channels.discord.dm.policy="open"` and `channels.discord.dm.allowFrom=["*"]`.
+   - To hard-allowlist: set `channels.discord.dm.policy="allowlist"` and list senders in `channels.discord.dm.allowFrom`.
+   - To ignore all DMs: set `channels.discord.dm.enabled=false` or `channels.discord.dm.policy="disabled"`.
+8. Group DMs are ignored by default; enable via `channels.discord.dm.groupEnabled` and optionally restrict by `channels.discord.dm.groupChannels`.
+9. Optional guild rules: set `channels.discord.guilds` keyed by guild id (preferred) or slug, with per-channel rules.
+10. Optional native commands: `commands.native` defaults to `"auto"` (on for Discord/Telegram, off for Slack). Override with `channels.discord.commands.native: true|false|"auto"`; `false` clears previously registered commands. Text commands are controlled by `commands.text` and must be sent as standalone `/...` messages. Use `commands.useAccessGroups: false` to bypass access-group checks for commands.
     - Full command list + config: [Slash commands](/tools/slash-commands)
-11. Optional guild context history: set `discord.historyLimit` (default 20, falls back to `messages.groupChat.historyLimit`) to include the last N guild messages as context when replying to a mention. Set `0` to disable.
-12. Reactions: the agent can trigger reactions via the `discord` tool (gated by `discord.actions.*`).
+11. Optional guild context history: set `channels.discord.historyLimit` (default 20, falls back to `messages.groupChat.historyLimit`) to include the last N guild messages as context when replying to a mention. Set `0` to disable.
+12. Reactions: the agent can trigger reactions via the `discord` tool (gated by `channels.discord.actions.*`).
     - Reaction removal semantics: see [/tools/reactions](/tools/reactions).
-    - The `discord` tool is only exposed when the current provider is Discord.
+    - The `discord` tool is only exposed when the current channel is Discord.
 13. Native commands use isolated session keys (`agent:<agentId>:discord:slash:<userId>`) rather than the shared `main` session.
 
 Note: Discord does not provide a simple username → id lookup without extra guild context, so prefer ids or `<@id>` mentions for DM delivery targets.
@@ -117,37 +119,41 @@ Or via config:
 
 ```json5
 {
-  discord: {
-    enabled: true,
-    token: "YOUR_BOT_TOKEN"
+  channels: {
+    discord: {
+      enabled: true,
+      token: "YOUR_BOT_TOKEN"
+    }
   }
 }
 ```
 
-Multi-account support: use `discord.accounts` with per-account tokens and optional `name`. See [`gateway/configuration`](/gateway/configuration#telegramaccounts--discordaccounts--slackaccounts--signalaccounts--imessageaccounts) for the shared pattern.
+Multi-account support: use `channels.discord.accounts` with per-account tokens and optional `name`. See [`gateway/configuration`](/gateway/configuration#telegramaccounts--discordaccounts--slackaccounts--signalaccounts--imessageaccounts) for the shared pattern.
 
 #### Allowlist + channel routing
 Example “single server, only allow me, only allow #help”:
 
 ```json5
 {
-  discord: {
-    enabled: true,
-    dm: { enabled: false },
-    guilds: {
-      "YOUR_GUILD_ID": {
-        users: ["YOUR_USER_ID"],
-        requireMention: true,
-        channels: {
-          help: { allow: true, requireMention: true }
+  channels: {
+    discord: {
+      enabled: true,
+      dm: { enabled: false },
+      guilds: {
+        "YOUR_GUILD_ID": {
+          users: ["YOUR_USER_ID"],
+          requireMention: true,
+          channels: {
+            help: { allow: true, requireMention: true }
+          }
         }
+      },
+      retry: {
+        attempts: 3,
+        minDelayMs: 500,
+        maxDelayMs: 30000,
+        jitter: 0.1
       }
-    },
-    retry: {
-      attempts: 3,
-      minDelayMs: 500,
-      maxDelayMs: 30000,
-      jitter: 0.1
     }
   }
 }
@@ -158,8 +164,8 @@ Notes:
 - `agents.list[].groupChat.mentionPatterns` (or `messages.groupChat.mentionPatterns`) also count as mentions for guild messages.
 - Multi-agent override: set per-agent patterns on `agents.list[].groupChat.mentionPatterns`.
 - If `channels` is present, any channel not listed is denied by default.
-- Bot-authored messages are ignored by default; set `discord.allowBots=true` to allow them (own messages remain filtered).
-- Warning: If you allow replies to other bots (`discord.allowBots=true`), prevent bot-to-bot reply loops with `requireMention`, `discord.guilds.*.channels.<id>.users` allowlists, and/or clear guardrails in `AGENTS.md` and `SOUL.md`.
+- Bot-authored messages are ignored by default; set `channels.discord.allowBots=true` to allow them (own messages remain filtered).
+- Warning: If you allow replies to other bots (`channels.discord.allowBots=true`), prevent bot-to-bot reply loops with `requireMention`, `channels.discord.guilds.*.channels.<id>.users` allowlists, and/or clear guardrails in `AGENTS.md` and `SOUL.md`.
 
 ### 6) Verify it works
 1. Start the gateway.
@@ -167,7 +173,7 @@ Notes:
 3. If nothing happens: check **Troubleshooting** below.
 
 ### Troubleshooting
-- First: run `clawdbot doctor` and `clawdbot providers status --probe` (actionable warnings + quick audits).
+- First: run `clawdbot doctor` and `clawdbot channels status --probe` (actionable warnings + quick audits).
 - **“Used disallowed intents”**: enable **Message Content Intent** (and likely **Server Members Intent**) in the Developer Portal, then restart the gateway.
 - **Bot connects but never replies in a guild channel**:
   - Missing **Message Content Intent**, or
@@ -175,78 +181,80 @@ Notes:
   - Your config requires mentions and you didn’t mention it, or
   - Your guild/channel allowlist denies the channel/user.
 - **`requireMention: false` but still no replies**:
-  - `discord.groupPolicy` defaults to **allowlist**; you must either set it to `"open"` or explicitly list the channel under `discord.guilds.<id>.channels`.
-  - `requireMention` must live under `discord.guilds` (or a specific channel). `discord.requireMention` at the top level is ignored.
-- **Permission audits** (`providers status --probe`) only check numeric channel IDs. If you use slugs/names as `discord.guilds.*.channels` keys, the audit can’t verify permissions.
-- **DMs don’t work**: `discord.dm.enabled=false`, `discord.dm.policy="disabled"`, or you haven’t been approved yet (`discord.dm.policy="pairing"`).
+  - `channels.discord.groupPolicy` defaults to **allowlist**; set it to `"open"` or explicitly list channels under `channels.discord.guilds.<id>.channels`.
+  - `requireMention` must live under `channels.discord.guilds` (or a specific channel). `channels.discord.requireMention` at the top level is ignored.
+- **Permission audits** (`channels status --probe`) only check numeric channel IDs. If you use slugs/names as `channels.discord.guilds.*.channels` keys, the audit can’t verify permissions.
+- **DMs don’t work**: `channels.discord.dm.enabled=false`, `channels.discord.dm.policy="disabled"`, or you haven’t been approved yet (`channels.discord.dm.policy="pairing"`).
 
 ## Capabilities & limits
 - DMs and guild text channels (threads are treated as separate channels; voice not supported).
-- Typing indicators sent best-effort; message chunking uses `discord.textChunkLimit` (default 2000) and splits tall replies by line count (`discord.maxLinesPerMessage`, default 17).
-- File uploads supported up to the configured `discord.mediaMaxMb` (default 8 MB).
+- Typing indicators sent best-effort; message chunking uses `channels.discord.textChunkLimit` (default 2000) and splits tall replies by line count (`channels.discord.maxLinesPerMessage`, default 17).
+- File uploads supported up to the configured `channels.discord.mediaMaxMb` (default 8 MB).
 - Mention-gated guild replies by default to avoid noisy bots.
 - Reply context is injected when a message references another message (quoted content + ids).
-- Native reply threading is **off by default**; enable with `discord.replyToMode` and reply tags.
+- Native reply threading is **off by default**; enable with `channels.discord.replyToMode` and reply tags.
 
 ## Retry policy
-Outbound Discord API calls retry on rate limits (429) using Discord `retry_after` when available, with exponential backoff and jitter. Configure via `discord.retry`. See [Retry policy](/concepts/retry).
+Outbound Discord API calls retry on rate limits (429) using Discord `retry_after` when available, with exponential backoff and jitter. Configure via `channels.discord.retry`. See [Retry policy](/concepts/retry).
 
 ## Config
 
 ```json5
 {
-  discord: {
-    enabled: true,
-    token: "abc.123",
-    groupPolicy: "allowlist",
-    guilds: {
-      "*": {
-        channels: {
-          general: { allow: true }
-        }
-      }
-    },
-    mediaMaxMb: 8,
-    actions: {
-      reactions: true,
-      stickers: true,
-      polls: true,
-      permissions: true,
-      messages: true,
-      threads: true,
-      pins: true,
-      search: true,
-      memberInfo: true,
-      roleInfo: true,
-      roles: false,
-      channelInfo: true,
-      voiceStatus: true,
-      events: true,
-      moderation: false
-    },
-    replyToMode: "off",
-    dm: {
+  channels: {
+    discord: {
       enabled: true,
-      policy: "pairing", // pairing | allowlist | open | disabled
-      allowFrom: ["123456789012345678", "steipete"],
-      groupEnabled: false,
-      groupChannels: ["clawd-dm"]
-    },
-    guilds: {
-      "*": { requireMention: true },
-      "123456789012345678": {
-        slug: "friends-of-clawd",
-        requireMention: false,
-        reactionNotifications: "own",
-        users: ["987654321098765432", "steipete"],
-        channels: {
-          general: { allow: true },
-          help: {
-            allow: true,
-            requireMention: true,
-            users: ["987654321098765432"],
-            skills: ["search", "docs"],
-            systemPrompt: "Keep answers short."
+      token: "abc.123",
+      groupPolicy: "allowlist",
+      guilds: {
+        "*": {
+          channels: {
+            general: { allow: true }
+          }
+        }
+      },
+      mediaMaxMb: 8,
+      actions: {
+        reactions: true,
+        stickers: true,
+        polls: true,
+        permissions: true,
+        messages: true,
+        threads: true,
+        pins: true,
+        search: true,
+        memberInfo: true,
+        roleInfo: true,
+        roles: false,
+        channelInfo: true,
+        voiceStatus: true,
+        events: true,
+        moderation: false
+      },
+      replyToMode: "off",
+      dm: {
+        enabled: true,
+        policy: "pairing", // pairing | allowlist | open | disabled
+        allowFrom: ["123456789012345678", "steipete"],
+        groupEnabled: false,
+        groupChannels: ["clawd-dm"]
+      },
+      guilds: {
+        "*": { requireMention: true },
+        "123456789012345678": {
+          slug: "friends-of-clawd",
+          requireMention: false,
+          reactionNotifications: "own",
+          users: ["987654321098765432", "steipete"],
+          channels: {
+            general: { allow: true },
+            help: {
+              allow: true,
+              requireMention: true,
+              users: ["987654321098765432"],
+              skills: ["search", "docs"],
+              systemPrompt: "Keep answers short."
+            }
           }
         }
       }
@@ -323,7 +331,7 @@ To request a threaded reply, the model can include one tag in its output:
 - `[[reply_to:<id>]]` — reply to a specific message id from context/history.
 Current message ids are appended to prompts as `[message_id: …]`; history entries already include ids.
 
-Behavior is controlled by `discord.replyToMode`:
+Behavior is controlled by `channels.discord.replyToMode`:
 - `off`: ignore tags.
 - `first`: only the first outbound chunk/attachment is a reply.
 - `all`: every outbound chunk/attachment is a reply.
@@ -336,7 +344,7 @@ Allowlist matching notes:
 
 Native command notes:
 - The registered commands mirror Clawdbot’s chat commands.
-- Native commands honor the same allowlists as DMs/guild messages (`discord.dm.allowFrom`, `discord.guilds`, per-channel rules).
+- Native commands honor the same allowlists as DMs/guild messages (`channels.discord.dm.allowFrom`, `channels.discord.guilds`, per-channel rules).
 
 ## Tool actions
 The agent can call `discord` with actions like:

@@ -1,7 +1,7 @@
 ---
 summary: "Microsoft Teams bot support status, capabilities, and configuration"
 read_when:
-  - Working on MS Teams provider features
+  - Working on MS Teams channel features
 ---
 # Microsoft Teams (Bot Framework)
 
@@ -21,39 +21,43 @@ Status: text + DM attachments are supported; channel/group attachments require M
 Minimal config:
 ```json5
 {
-  msteams: {
-    enabled: true,
-    appId: "<APP_ID>",
-    appPassword: "<APP_PASSWORD>",
-    tenantId: "<TENANT_ID>",
-    webhook: { port: 3978, path: "/api/messages" }
+  channels: {
+    msteams: {
+      enabled: true,
+      appId: "<APP_ID>",
+      appPassword: "<APP_PASSWORD>",
+      tenantId: "<TENANT_ID>",
+      webhook: { port: 3978, path: "/api/messages" }
+    }
   }
 }
 ```
-Note: group chats are blocked by default (`msteams.groupPolicy: "allowlist"`). To allow group replies, set `msteams.groupAllowFrom` (or use `groupPolicy: "open"` to allow any member, mention-gated).
+Note: group chats are blocked by default (`channels.msteams.groupPolicy: "allowlist"`). To allow group replies, set `channels.msteams.groupAllowFrom` (or use `groupPolicy: "open"` to allow any member, mention-gated).
 
 ## Goals
 - Talk to Clawdbot via Teams DMs, group chats, or channels.
-- Keep routing deterministic: replies always go back to the provider they arrived on.
+- Keep routing deterministic: replies always go back to the channel they arrived on.
 - Default to safe channel behavior (mentions required unless configured otherwise).
 
 ## Access control (DMs + groups)
 
 **DM access**
-- Default: `msteams.dmPolicy = "pairing"`. Unknown senders are ignored until approved.
-- `msteams.allowFrom` accepts AAD object IDs or UPNs.
+- Default: `channels.msteams.dmPolicy = "pairing"`. Unknown senders are ignored until approved.
+- `channels.msteams.allowFrom` accepts AAD object IDs or UPNs.
 
 **Group access**
-- Default: `msteams.groupPolicy = "allowlist"` (blocked unless you add `groupAllowFrom`).
-- `msteams.groupAllowFrom` controls which senders can trigger in group chats/channels (falls back to `msteams.allowFrom`).
+- Default: `channels.msteams.groupPolicy = "allowlist"` (blocked unless you add `groupAllowFrom`).
+- `channels.msteams.groupAllowFrom` controls which senders can trigger in group chats/channels (falls back to `channels.msteams.allowFrom`).
 - Set `groupPolicy: "open"` to allow any member (still mention‑gated by default).
 
 Example:
 ```json5
 {
-  msteams: {
-    groupPolicy: "allowlist",
-    groupAllowFrom: ["user@org.com"]
+  channels: {
+    msteams: {
+      groupPolicy: "allowlist",
+      groupAllowFrom: ["user@org.com"]
+    }
   }
 }
 ```
@@ -189,10 +193,10 @@ This is often easier than hand-editing JSON manifests.
      - `https://<host>:3978/api/messages` (or your chosen path/port).
 
 5. **Run the gateway**
-   - The Teams provider starts automatically when `msteams` config exists and credentials are set.
+   - The Teams channel starts automatically when `msteams` config exists and credentials are set.
 
 ## History context
-- `msteams.historyLimit` controls how many recent channel/group messages are wrapped into the prompt.
+- `channels.msteams.historyLimit` controls how many recent channel/group messages are wrapped into the prompt.
 - Falls back to `messages.groupChat.historyLimit`. Set `0` to disable (default 50).
 
 ## Current Teams RSC Permissions (Manifest)
@@ -336,22 +340,22 @@ Teams markdown is more limited than Slack or Discord:
 - Adaptive Cards are used for polls; other card types are not yet supported
 
 ## Configuration
-Key settings (see `/gateway/configuration` for shared provider patterns):
+Key settings (see `/gateway/configuration` for shared channel patterns):
 
-- `msteams.enabled`: enable/disable the provider.
-- `msteams.appId`, `msteams.appPassword`, `msteams.tenantId`: bot credentials.
-- `msteams.webhook.port` (default `3978`)
-- `msteams.webhook.path` (default `/api/messages`)
-- `msteams.dmPolicy`: `pairing | allowlist | open | disabled` (default: pairing)
-- `msteams.allowFrom`: allowlist for DMs (AAD object IDs or UPNs).
-- `msteams.textChunkLimit`: outbound text chunk size.
-- `msteams.mediaAllowHosts`: allowlist for inbound attachment hosts (defaults to Microsoft/Teams domains).
-- `msteams.requireMention`: require @mention in channels/groups (default true).
-- `msteams.replyStyle`: `thread | top-level` (see [Reply Style](#reply-style-threads-vs-posts)).
-- `msteams.teams.<teamId>.replyStyle`: per-team override.
-- `msteams.teams.<teamId>.requireMention`: per-team override.
-- `msteams.teams.<teamId>.channels.<conversationId>.replyStyle`: per-channel override.
-- `msteams.teams.<teamId>.channels.<conversationId>.requireMention`: per-channel override.
+- `channels.msteams.enabled`: enable/disable the channel.
+- `channels.msteams.appId`, `channels.msteams.appPassword`, `channels.msteams.tenantId`: bot credentials.
+- `channels.msteams.webhook.port` (default `3978`)
+- `channels.msteams.webhook.path` (default `/api/messages`)
+- `channels.msteams.dmPolicy`: `pairing | allowlist | open | disabled` (default: pairing)
+- `channels.msteams.allowFrom`: allowlist for DMs (AAD object IDs or UPNs).
+- `channels.msteams.textChunkLimit`: outbound text chunk size.
+- `channels.msteams.mediaAllowHosts`: allowlist for inbound attachment hosts (defaults to Microsoft/Teams domains).
+- `channels.msteams.requireMention`: require @mention in channels/groups (default true).
+- `channels.msteams.replyStyle`: `thread | top-level` (see [Reply Style](#reply-style-threads-vs-posts)).
+- `channels.msteams.teams.<teamId>.replyStyle`: per-team override.
+- `channels.msteams.teams.<teamId>.requireMention`: per-team override.
+- `channels.msteams.teams.<teamId>.channels.<conversationId>.replyStyle`: per-channel override.
+- `channels.msteams.teams.<teamId>.channels.<conversationId>.requireMention`: per-channel override.
 
 ## Routing & Sessions
 - Session keys follow the standard agent format (see [/concepts/session](/concepts/session)):
@@ -399,7 +403,7 @@ Teams recently introduced two channel UI styles over the same underlying data mo
 - **Channels/groups:** Attachments live in M365 storage (SharePoint/OneDrive). The webhook payload only includes an HTML stub, not the actual file bytes. **Graph API permissions are required** to download channel attachments.
 
 Without Graph permissions, channel messages with images will be received as text-only (the image content is not accessible to the bot).
-By default, Clawdbot only downloads media from Microsoft/Teams hostnames. Override with `msteams.mediaAllowHosts` (use `["*"]` to allow any host).
+By default, Clawdbot only downloads media from Microsoft/Teams hostnames. Override with `channels.msteams.mediaAllowHosts` (use `["*"]` to allow any host).
 
 ## Polls (Adaptive Cards)
 Clawdbot sends Teams polls as Adaptive Cards (there is no native Teams poll API).
@@ -458,7 +462,7 @@ Bots have limited support in private channels:
 ### Common issues
 
 - **Images not showing in channels:** Graph permissions or admin consent missing. Reinstall the Teams app and fully quit/reopen Teams.
-- **No responses in channel:** mentions are required by default; set `msteams.requireMention=false` or configure per team/channel.
+- **No responses in channel:** mentions are required by default; set `channels.msteams.requireMention=false` or configure per team/channel.
 - **Version mismatch (Teams still shows old manifest):** remove + re-add the app and fully quit Teams to refresh.
 - **401 Unauthorized from webhook:** Expected when testing manually without Azure JWT - means endpoint is reachable but auth failed. Use Azure Web Chat to test properly.
 

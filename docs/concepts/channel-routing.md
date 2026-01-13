@@ -1,19 +1,19 @@
 ---
-summary: "Routing rules per provider (WhatsApp, Telegram, Discord, Slack) and shared context"
+summary: "Routing rules per channel (WhatsApp, Telegram, Discord, Slack) and shared context"
 read_when:
-  - Changing provider routing or inbox behavior
+  - Changing channel routing or inbox behavior
 ---
-# Providers & routing
+# Channels & routing
 
 
-Clawdbot routes replies **back to the provider where a message came from**. The
-model does not choose a provider; routing is deterministic and controlled by the
+Clawdbot routes replies **back to the channel where a message came from**. The
+model does not choose a channel; routing is deterministic and controlled by the
 host configuration.
 
 ## Key terms
 
-- **Provider**: `whatsapp`, `telegram`, `discord`, `slack`, `signal`, `imessage`, `webchat`.
-- **AccountId**: per‑provider account instance (when supported).
+- **Channel**: `whatsapp`, `telegram`, `discord`, `slack`, `signal`, `imessage`, `webchat`.
+- **AccountId**: per‑channel account instance (when supported).
 - **AgentId**: an isolated workspace + session store (“brain”).
 - **SessionKey**: the bucket key used to store context and control concurrency.
 
@@ -23,10 +23,10 @@ Direct messages collapse to the agent’s **main** session:
 
 - `agent:<agentId>:<mainKey>` (default: `agent:main:main`)
 
-Groups and channels remain isolated per provider:
+Groups and channels remain isolated per channel:
 
-- Groups: `agent:<agentId>:<provider>:group:<id>`
-- Channels/rooms: `agent:<agentId>:<provider>:channel:<id>`
+- Groups: `agent:<agentId>:<channel>:group:<id>`
+- Channels/rooms: `agent:<agentId>:<channel>:channel:<id>`
 
 Threads:
 
@@ -45,8 +45,8 @@ Routing picks **one agent** for each inbound message:
 1. **Exact peer match** (`bindings` with `peer.kind` + `peer.id`).
 2. **Guild match** (Discord) via `guildId`.
 3. **Team match** (Slack) via `teamId`.
-4. **Account match** (`accountId` on the provider).
-5. **Provider match** (any account on that provider).
+4. **Account match** (`accountId` on the channel).
+5. **Channel match** (any account on that channel).
 6. **Default agent** (`agents.list[].default`, else first list entry, fallback to `main`).
 
 The matched agent determines which workspace and session store are used.
@@ -72,7 +72,7 @@ See: [Broadcast Groups](/broadcast-groups).
 ## Config overview
 
 - `agents.list`: named agent definitions (workspace, model, etc.).
-- `bindings`: map inbound providers/accounts/peers to agents.
+- `bindings`: map inbound channels/accounts/peers to agents.
 
 Example:
 
@@ -84,8 +84,8 @@ Example:
     ]
   },
   bindings: [
-    { match: { provider: "slack", teamId: "T123" }, agentId: "support" },
-    { match: { provider: "telegram", peer: { kind: "group", id: "-100123" } }, agentId: "support" }
+    { match: { channel: "slack", teamId: "T123" }, agentId: "support" },
+    { match: { channel: "telegram", peer: { kind: "group", id: "-100123" } }, agentId: "support" }
   ]
 }
 ```
@@ -102,7 +102,7 @@ You can override the store path via `session.store` and `{agentId}` templating.
 ## WebChat behavior
 
 WebChat attaches to the **selected agent** and defaults to the agent’s main
-session. Because of this, WebChat lets you see cross‑provider context for that
+session. Because of this, WebChat lets you see cross‑channel context for that
 agent in one place.
 
 ## Reply context
@@ -111,4 +111,4 @@ Inbound replies include:
 - `ReplyToId`, `ReplyToBody`, and `ReplyToSender` when available.
 - Quoted context is appended to `Body` as a `[Replying to ...]` block.
 
-This is consistent across providers.
+This is consistent across channels.

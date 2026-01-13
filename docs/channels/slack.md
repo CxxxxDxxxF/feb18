@@ -13,16 +13,18 @@ read_when: "Setting up Slack or debugging Slack socket mode"
 Minimal config:
 ```json5
 {
-  slack: {
-    enabled: true,
-    appToken: "xapp-...",
-    botToken: "xoxb-..."
+  channels: {
+    slack: {
+      enabled: true,
+      appToken: "xapp-...",
+      botToken: "xoxb-..."
+    }
   }
 }
 ```
 
 ## Setup
-1) Create a Slack app (From scratch) in https://api.slack.com/apps.
+1) Create a Slack app (From scratch) in https://api.channels.slack.com/apps.
 2) **Socket Mode** → toggle on. Then go to **Basic Information** → **App-Level Tokens** → **Generate Token and Scopes** with scope `connections:write`. Copy the **App Token** (`xapp-...`).
 3) **OAuth & Permissions** → add bot token scopes (use the manifest below). Click **Install to Workspace**. Copy the **Bot User OAuth Token** (`xoxb-...`).
 4) **Event Subscriptions** → enable events and subscribe to:
@@ -33,12 +35,12 @@ Minimal config:
    - `channel_rename`
    - `pin_added`, `pin_removed`
 5) Invite the bot to channels you want it to read.
-6) Slash Commands → create `/clawd` if you use `slack.slashCommand`. If you enable native commands, add one slash command per built-in command (same names as `/help`). Native defaults to off for Slack unless you set `slack.commands.native: true` (global `commands.native` is `"auto"` which leaves Slack off).
+6) Slash Commands → create `/clawd` if you use `channels.slack.slashCommand`. If you enable native commands, add one slash command per built-in command (same names as `/help`). Native defaults to off for Slack unless you set `channels.slack.commands.native: true` (global `commands.native` is `"auto"` which leaves Slack off).
 7) App Home → enable the **Messages Tab** so users can DM the bot.
 
 Use the manifest below so scopes and events stay in sync.
 
-Multi-account support: use `slack.accounts` with per-account tokens and optional `name`. See [`gateway/configuration`](/gateway/configuration#telegramaccounts--discordaccounts--slackaccounts--signalaccounts--imessageaccounts) for the shared pattern.
+Multi-account support: use `channels.slack.accounts` with per-account tokens and optional `name`. See [`gateway/configuration`](/gateway/configuration#telegramaccounts--discordaccounts--slackaccounts--signalaccounts--imessageaccounts) for the shared pattern.
 
 ## Clawdbot config (minimal)
 
@@ -50,16 +52,18 @@ Or via config:
 
 ```json5
 {
-  slack: {
-    enabled: true,
-    appToken: "xapp-...",
-    botToken: "xoxb-..."
+  channels: {
+    slack: {
+      enabled: true,
+      appToken: "xapp-...",
+      botToken: "xoxb-..."
+    }
   }
 }
 ```
 
 ## History context
-- `slack.historyLimit` (or `slack.accounts.*.historyLimit`) controls how many recent channel/group messages are wrapped into the prompt.
+- `channels.slack.historyLimit` (or `channels.slack.accounts.*.historyLimit`) controls how many recent channel/group messages are wrapped into the prompt.
 - Falls back to `messages.groupChat.historyLimit`. Set `0` to disable (default 50).
 
 ## Manifest (optional)
@@ -138,42 +142,42 @@ Use this Slack app manifest to create the app quickly (adjust the name/command i
 }
 ```
 
-If you enable native commands, add one `slash_commands` entry per command you want to expose (matching the `/help` list). Override with `slack.commands.native`.
+If you enable native commands, add one `slash_commands` entry per command you want to expose (matching the `/help` list). Override with `channels.slack.commands.native`.
 
 ## Scopes (current vs optional)
 Slack's Conversations API is type-scoped: you only need the scopes for the
 conversation types you actually touch (channels, groups, im, mpim). See
-https://api.slack.com/docs/conversations-api for the overview.
+https://api.channels.slack.com/docs/conversations-api for the overview.
 
 ### Required scopes
 - `chat:write` (send/update/delete messages via `chat.postMessage`)
-  https://api.slack.com/methods/chat.postMessage
+  https://api.channels.slack.com/methods/chat.postMessage
 - `im:write` (open DMs via `conversations.open` for user DMs)
-  https://api.slack.com/methods/conversations.open
+  https://api.channels.slack.com/methods/conversations.open
 - `channels:history`, `groups:history`, `im:history`, `mpim:history`
-  https://api.slack.com/methods/conversations.history
+  https://api.channels.slack.com/methods/conversations.history
 - `channels:read`, `groups:read`, `im:read`, `mpim:read`
-  https://api.slack.com/methods/conversations.info
+  https://api.channels.slack.com/methods/conversations.info
 - `users:read` (user lookup)
-  https://api.slack.com/methods/users.info
+  https://api.channels.slack.com/methods/users.info
 - `reactions:read`, `reactions:write` (`reactions.get` / `reactions.add`)
-  https://api.slack.com/methods/reactions.get
-  https://api.slack.com/methods/reactions.add
+  https://api.channels.slack.com/methods/reactions.get
+  https://api.channels.slack.com/methods/reactions.add
 - `pins:read`, `pins:write` (`pins.list` / `pins.add` / `pins.remove`)
-  https://api.slack.com/scopes/pins:read
-  https://api.slack.com/scopes/pins:write
+  https://api.channels.slack.com/scopes/pins:read
+  https://api.channels.slack.com/scopes/pins:write
 - `emoji:read` (`emoji.list`)
-  https://api.slack.com/scopes/emoji:read
+  https://api.channels.slack.com/scopes/emoji:read
 - `files:write` (uploads via `files.uploadV2`)
-  https://api.slack.com/messaging/files/uploading
+  https://api.channels.slack.com/messaging/files/uploading
 
 ### Not needed today (but likely future)
 - `mpim:write` (only if we add group-DM open/DM start via `conversations.open`)
 - `groups:write` (only if we add private-channel management: create/rename/invite/archive)
 - `chat:write.public` (only if we want to post to channels the bot isn't in)
-  https://api.slack.com/scopes/chat:write.public
+  https://api.channels.slack.com/scopes/chat:write.public
 - `users:read.email` (only if we need email fields from `users.info`)
-  https://api.slack.com/changelog/2017-04-narrowing-email-access
+  https://api.channels.slack.com/changelog/2017-04-narrowing-email-access
 - `files:read` (only if we start listing/reading file metadata)
 
 ## Config
@@ -234,11 +238,11 @@ Ack reactions are controlled globally via `messages.ackReaction` +
 ack reaction after the bot replies.
 
 ## Limits
-- Outbound text is chunked to `slack.textChunkLimit` (default 4000).
-- Media uploads are capped by `slack.mediaMaxMb` (default 20).
+- Outbound text is chunked to `channels.slack.textChunkLimit` (default 4000).
+- Media uploads are capped by `channels.slack.mediaMaxMb` (default 20).
 
 ## Reply threading
-By default, Clawdbot replies in the main channel. Use `slack.replyToMode` to control automatic threading:
+By default, Clawdbot replies in the main channel. Use `channels.slack.replyToMode` to control automatic threading:
 
 | Mode | Behavior |
 | --- | --- |
@@ -256,20 +260,20 @@ For fine-grained control, use these tags in agent responses:
 ## Sessions + routing
 - DMs share the `main` session (like WhatsApp/Telegram).
 - Channels map to `agent:<agentId>:slack:channel:<channelId>` sessions.
-- Slash commands use `agent:<agentId>:slack:slash:<userId>` sessions (prefix configurable via `slack.slashCommand.sessionPrefix`).
-- Native command registration uses `commands.native` (global default `"auto"` → Slack off) and can be overridden per-workspace with `slack.commands.native`. Text commands require standalone `/...` messages and can be disabled with `commands.text: false`. Slack slash commands are managed in the Slack app and are not removed automatically. Use `commands.useAccessGroups: false` to bypass access-group checks for commands.
+- Slash commands use `agent:<agentId>:slack:slash:<userId>` sessions (prefix configurable via `channels.slack.slashCommand.sessionPrefix`).
+- Native command registration uses `commands.native` (global default `"auto"` → Slack off) and can be overridden per-workspace with `channels.slack.commands.native`. Text commands require standalone `/...` messages and can be disabled with `commands.text: false`. Slack slash commands are managed in the Slack app and are not removed automatically. Use `commands.useAccessGroups: false` to bypass access-group checks for commands.
 - Full command list + config: [Slash commands](/tools/slash-commands)
 
 ## DM security (pairing)
-- Default: `slack.dm.policy="pairing"` — unknown DM senders get a pairing code (expires after 1 hour).
+- Default: `channels.slack.dm.policy="pairing"` — unknown DM senders get a pairing code (expires after 1 hour).
 - Approve via: `clawdbot pairing approve slack <code>`.
-- To allow anyone: set `slack.dm.policy="open"` and `slack.dm.allowFrom=["*"]`.
+- To allow anyone: set `channels.slack.dm.policy="open"` and `channels.slack.dm.allowFrom=["*"]`.
 
 ## Group policy
-- `slack.groupPolicy` controls channel handling (`open|disabled|allowlist`).
-- `allowlist` requires channels to be listed in `slack.channels`.
+- `channels.slack.groupPolicy` controls channel handling (`open|disabled|allowlist`).
+- `allowlist` requires channels to be listed in `channels.slack.channels`.
 
-Channel options (`slack.channels.<id>` or `slack.channels.<name>`):
+Channel options (`channels.slack.channels.<id>` or `channels.slack.channels.<name>`):
 - `allow`: allow/deny the channel when `groupPolicy="allowlist"`.
 - `requireMention`: mention gating for the channel.
 - `allowBots`: allow bot-authored messages in this channel (default: false).
@@ -284,7 +288,7 @@ Use these with cron/CLI sends:
 - `channel:<id>` for channels
 
 ## Tool actions
-Slack tool actions can be gated with `slack.actions.*`:
+Slack tool actions can be gated with `channels.slack.actions.*`:
 
 | Action group | Default | Notes |
 | --- | --- | --- |
@@ -295,10 +299,10 @@ Slack tool actions can be gated with `slack.actions.*`:
 | emojiList | enabled | Custom emoji list |
 
 ## Notes
-- Mention gating is controlled via `slack.channels` (set `requireMention` to `true`); `agents.list[].groupChat.mentionPatterns` (or `messages.groupChat.mentionPatterns`) also count as mentions.
+- Mention gating is controlled via `channels.slack.channels` (set `requireMention` to `true`); `agents.list[].groupChat.mentionPatterns` (or `messages.groupChat.mentionPatterns`) also count as mentions.
 - Multi-agent override: set per-agent patterns on `agents.list[].groupChat.mentionPatterns`.
-- Reaction notifications follow `slack.reactionNotifications` (use `reactionAllowlist` with mode `allowlist`).
-- Bot-authored messages are ignored by default; enable via `slack.allowBots` or `slack.channels.<id>.allowBots`.
-- Warning: If you allow replies to other bots (`slack.allowBots=true` or `slack.channels.<id>.allowBots=true`), prevent bot-to-bot reply loops with `requireMention`, `slack.channels.<id>.users` allowlists, and/or clear guardrails in `AGENTS.md` and `SOUL.md`.
+- Reaction notifications follow `channels.slack.reactionNotifications` (use `reactionAllowlist` with mode `allowlist`).
+- Bot-authored messages are ignored by default; enable via `channels.slack.allowBots` or `channels.slack.channels.<id>.allowBots`.
+- Warning: If you allow replies to other bots (`channels.slack.allowBots=true` or `channels.slack.channels.<id>.allowBots=true`), prevent bot-to-bot reply loops with `requireMention`, `channels.slack.channels.<id>.users` allowlists, and/or clear guardrails in `AGENTS.md` and `SOUL.md`.
 - For the Slack tool, reaction removal semantics are in [/tools/reactions](/tools/reactions).
 - Attachments are downloaded to the media store when permitted and under the size limit.

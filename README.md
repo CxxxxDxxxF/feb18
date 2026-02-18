@@ -1,5 +1,9 @@
 # 🦞 OpenClaw — Personal AI Assistant
 
+This repository contains OpenClaw, a self‑hosted, multi‑channel AI assistant and gateway
+you run on your own devices. It connects to the chat surfaces you already use and keeps
+the control plane local so your assistant feels fast, private, and always‑on.
+
 <p align="center">
     <picture>
         <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/openclaw/openclaw/main/docs/assets/openclaw-logo-text-dark.png">

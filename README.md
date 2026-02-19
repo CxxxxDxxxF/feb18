@@ -12,6 +12,12 @@ openclaw onboard \
   --token "$OPENROUTER_API_KEY"
 ```
 
+If you prefer a local env file, copy the example:
+
+```bash
+cp .env.example .env
+```
+
 Routing default (cost-aware):
 
 ```js

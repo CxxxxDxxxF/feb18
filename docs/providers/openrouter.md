@@ -14,19 +14,39 @@ endpoint and API key. It is OpenAI-compatible, so most OpenAI SDKs work by switc
 ## CLI setup
 
 ```bash
+export OPENROUTER_API_KEY="your_key_here"
 openclaw onboard --auth-choice apiKey --token-provider openrouter --token "$OPENROUTER_API_KEY"
 ```
 
-## Config snippet
+## Config examples
 
-```json5
+Routing default (cost-aware):
+
+```js
 {
-  env: { OPENROUTER_API_KEY: "sk-or-..." },
   agents: {
     defaults: {
-      model: { primary: "openrouter/anthropic/claude-sonnet-4-5" },
-    },
-  },
+      model: {
+        primary: "openrouter/openrouter/auto",
+        fallbacks: []
+      }
+    }
+  }
+}
+```
+
+Pinned model example (Kimi K2.5):
+
+```js
+{
+  agents: {
+    defaults: {
+      model: {
+        primary: "openrouter/moonshotai/kimi-k2.5",
+        fallbacks: ["openrouter/openrouter/auto"]
+      }
+    }
+  }
 }
 ```
 
